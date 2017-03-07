@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Created by Roman on 24/02/2017.
  */
-public class PredicateCalculus {
+public class PCalculus {
 
     public static final String IMPL = "->";
     public static final String AND = "&";
@@ -78,10 +78,10 @@ public class PredicateCalculus {
     }
 
     public static Node generalize(Node f, Var x) {
-        if (x.equals(FormalArithmetic.Z))
+        if (x.equals(Arithmetic.Z))
             return f;
-//        assert !x.name.equals(FormalArithmetic.ZERO);
-        Eq eq = new Eq(FormalArithmetic.Z, FormalArithmetic.Z);
+//        assert !x.name.equals(Arithmetic.ZERO);
+        Eq eq = new Eq(Arithmetic.Z, Arithmetic.Z);
         Map<String, Node> map = new HashMap<>();
         map.put("A", eq);
         map.put("B", eq);
@@ -102,13 +102,12 @@ public class PredicateCalculus {
         for (String var : toGen) {
             if (!proveGen) {
                 try {
-                    f = new Quantified(PredicateCalculus.FORALL, var, f);
+                    f = new Quantified(PCalculus.FORALL, var, f);
                 } catch (IllegalArgumentException e) {
-                    System.err.println(e.getMessage());
+//                    System.err.println(e.getMessage());
                 }
-            }
-            else
-                f = PredicateCalculus.generalize(f, new Var(var));
+            } else
+                f = PCalculus.generalize(f, new Var(var));
         }
         return f;
     }
@@ -141,8 +140,7 @@ public class PredicateCalculus {
             throw new IllegalArgumentException("f does not contain hypo " + f + " " + hypo);
         else if (!hypo.equals(h.getLeft())) {
             throw new IllegalArgumentException("h doesn't contain hypo " + h + " " + hypo);
-        }
-        else if (!f.getRight().equals(((BinaryNode) h.getRight()).getLeft()))
+        } else if (!f.getRight().equals(((BinaryNode) h.getRight()).getLeft()))
             throw new IllegalArgumentException("f is not antecedent of h " + f + " " + h);
         h = (Impl) h.getRight();
         Node g = h.getRight();
@@ -157,5 +155,90 @@ public class PredicateCalculus {
         return (Impl) MP(SCHEMES[1].apply(ImmutableMap.of("A", hypo,
                 "B", new Impl(hypo, hypo), "C", hypo)), 2);
     }
+
+
+    /**
+     * given alpha -> beta -> gamma, proves beta -> alpha -> gamma
+     */
+    public static Impl reverseImpl(Node alpha, Node beta, Node gamma) {
+        Node omega = new Impl(alpha, new Impl(beta, gamma));
+        deduction(omega, deduction(beta));
+        Node apply = SCHEMES[0].apply(ImmutableMap.of(
+                "A", beta, "B", alpha
+        ));
+        System.out.println(apply);
+        // omega -> beta -> alpha -> beta
+        Impl antecedent = (Impl) deduction(omega, apply).getRight();
+        // (alpha->beta->gamma)->(alpha->beta)->(alpha->gamma)
+        apply = SCHEMES[1].apply(ImmutableMap.of(
+                "A", alpha, "B", beta, "C", gamma
+        ));
+        System.out.println(apply);
+        Impl impl = (Impl) deduction(omega, deduction(beta, apply)).getRight();
+        // omega -> beta -> omega -> alpha -> gamma
+        Impl phi2 = deduction(omega, deduction(beta, antecedent, impl));
+        // omega -> beta -> omega
+        Impl phi1 = (Impl) SCHEMES[0].apply(ImmutableMap.of(
+                "A", omega, "B", beta
+        ));
+        System.out.println(phi1);
+        // omega ->
+        apply = SCHEMES[1].apply(ImmutableMap.of(
+                "A", beta, "B", omega, "C", new Impl(alpha, gamma)
+        ));
+        System.out.println(apply);
+        Impl phi3 = deduction(omega, apply);
+        System.err.println(phi1);
+        System.err.println(phi2);
+        System.err.println(phi3);
+        return (Impl) MP(deduction(omega, phi2, deduction(omega, phi1, phi3)));
+    }
+
+    /**
+     * @see PCalculus#reverseImpl(Node, Node, Node)
+     */
+    public static Impl reverseImpl(Impl impl) {
+        try {
+            Impl rightImpl = (Impl) impl.getRight();
+            return reverseImpl(impl.getLeft(), rightImpl.getLeft(), rightImpl.getRight());
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * given alpha -> beta -> gamma1
+     * alpha -> beta -> gamma2
+     * gamma1 -> gamma2 -> gamma3
+     * prove that
+     * alpha -> beta -> gamma3
+     */
+    public static Impl deduction(Node alpha, Node beta, Node gamma1, Node gamma2, Node gamma3) {
+        Impl omega = new Impl(gamma1, new Impl(gamma2, gamma3));
+
+        Impl scheme = (Impl) SCHEMES[1].apply((ImmutableMap.of(
+                "A", beta, "B", gamma1, "C", new Impl(gamma2, gamma3)
+        )));
+        System.out.println(scheme);
+        // alpha -> beta -> gamma2 -> gamma3
+        Impl impl = deduction(alpha,
+                // alpha -> beta -> omega
+                deduction(alpha, deduction(beta, omega)),
+                // alpha -> (beta -> omega) -> beta -> gamma2 -> gamma3
+                deduction(alpha, new Impl(alpha, new Impl(beta, gamma1)),
+                        // alpha -> (beta -> gamma1) -> (beta -> gamma1 -> gamma2 -> gamma3) -> beta -> gamma2 -> gamma3
+                        deduction(alpha, scheme)));
+
+        Node apply = SCHEMES[1].apply((ImmutableMap.of(
+                "A", beta, "B", gamma2, "C", gamma3
+        )));
+        System.out.println(apply);
+        scheme = deduction(alpha, apply);
+
+        return deduction(alpha, impl,
+                // alpha -> (beta -> gamma2 -> gamma3) -> beta -> gamma3
+                deduction(alpha, new Impl(alpha, new Impl(beta, gamma2)), scheme));
+    }
+
 
 }

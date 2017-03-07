@@ -8,6 +8,7 @@ public class Var extends Node implements Term {
     public Var(String name) {
         super(name, Collections.emptyList());
         vars.add(name);
+        priority = 9;
     }
 
     public Var(Node toCopy) {

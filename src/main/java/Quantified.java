@@ -13,6 +13,9 @@ public class Quantified extends Node {
         return variable;
     }
 
+    public Node getOperand() {
+        return children.get(0);
+    }
 
     public Quantified(Node toCopy) {
         super(toCopy);

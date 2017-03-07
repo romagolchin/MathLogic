@@ -3,7 +3,7 @@
  */
 public class Impl extends BinaryNode {
     public Impl(Node left, Node right) {
-        super(PredicateCalculus.IMPL, left, right);
+        super(PCalculus.IMPL, left, right);
         priority = 0;
     }
 

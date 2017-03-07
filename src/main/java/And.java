@@ -3,6 +3,7 @@
  */
 public class And extends BinaryNode {
     public And(Node left, Node right) {
-        super(PredicateCalculus.AND, left, right);
+        super(PCalculus.AND, left, right);
+        priority = 2;
     }
 }

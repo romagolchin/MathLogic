@@ -4,8 +4,8 @@
  */
 public class Eq extends BinaryNode {
     public Eq(Node left, Node right) {
-        super(FormalArithmetic.EQ, left, right);
-        priority = 1;
+        super(Arithmetic.EQ, left, right);
+        priority = 4;
     }
 
     public Eq reverse() {

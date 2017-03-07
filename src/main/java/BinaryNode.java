@@ -31,6 +31,9 @@ public class BinaryNode extends Node {
 
     @Override
     public String toString() {
+        if (this instanceof Eq && getLeft().equals(getRight())) {
+//            System.err.println(getLeft() + " " + getRight());
+        }
         String ls = getLeft().priority < priority ? "(" + getLeft().toString() + ")" : getLeft().toString();
         String rs = getRight().priority < priority ? "(" + getRight().toString() + ")" : getRight().toString();
         return ls + name + rs;

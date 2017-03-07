@@ -46,13 +46,13 @@ public class Node {
             // in most cases generalized formula is already proven
             boolean proveGen = proofNeeded.length > 1 && proofNeeded[1];
 
-            cur = PredicateCalculus.generalize(cur, applyMap.keySet(), proveGen);
+            cur = PCalculus.generalize(cur, applyMap.keySet(), proveGen);
 
             while (cur instanceof Quantified) {
                 Var var = new Var(((Quantified) cur).getVariable());
                 if (applyMap.containsKey(var.name)) {
                     Impl impl = new Impl(cur, cur.children.get(0).subst(var, applyMap.get(var.name)));
-                    cur = PredicateCalculus.MP(impl);
+                    cur = PCalculus.MP(impl);
                 }
             }
             return cur;
@@ -102,8 +102,11 @@ public class Node {
     }
 
     public Node subst(Var var, Node theta) {
-        if (this instanceof Var) return equals(var) ? theta : copy();
+        if (this instanceof Var)
+            return equals(var) ? theta : copy();
         else {
+            if (this instanceof Inc && children.get(0).equals(var))
+                return new Inc(theta, ((Inc) this).number);
             if (this instanceof Quantified) {
                 Quantified q = (Quantified) this;
                 // attempt to substitute bound variable
@@ -177,7 +180,7 @@ public class Node {
 
 
     public void prove() {
-        PredicateCalculus.generalize(this, true);
+        PCalculus.generalize(this, true);
     }
 
     /**
@@ -221,7 +224,7 @@ public class Node {
 //        System.out.println("rename to fresh vars");
         res = res.apply(renameMap, true);
 //        System.out.println("generalize using fresh vars");
-        PredicateCalculus.generalize(res, true);
+        PCalculus.generalize(res, true);
         Map<String, Node> appMap = new HashMap<>();
         for (Map.Entry<String, Node> pair : reverseMap.entrySet()) {
             Node value = usageMap.get(pair.getValue().toString());
