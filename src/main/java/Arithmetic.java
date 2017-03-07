@@ -147,8 +147,10 @@ public class Arithmetic {
                     // BASE: a + b + 0 = a + (b + 0)
                     // a + b = a + b + 0 -> a + b = a + (b + 0) -> base
                     ((Eq) AXIOMS[5]).reverse().rename(ImmutableMap.of("a", new Add(A, B)));
+                    // b = b + 0
                     ((Eq) AXIOMS[5]).reverse().rename(ImmutableMap.of("a", B));
-                    ADD_SUBST_LEMMA.rename(ImmutableMap.of("a", A, "b", B, "c", new Add(B, Z)));
+                    PCalculus.MP(ADD_SUBST_LEMMA.rename(ImmutableMap.of("a", A, "b", B, "c", new Add(B, Z))));
+                    // a + b = (a + b) + 0 -> a + b = a + (b + 0) -> (a + b) + 0 = a + (b + 0)
                     PCalculus.MP(AXIOMS[1].rename(ImmutableMap.of("a", new Add(A, B),
                             "b", new Add(new Add(A, B), Z), "c", new Add(A, new Add(B, Z)))), 2);
                     // STEP
