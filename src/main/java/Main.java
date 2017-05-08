@@ -1,5 +1,8 @@
 
 import com.google.common.collect.ImmutableMap;
+import node.*;
+import proofs.Arithmetic;
+import proofs.PCalculus;
 
 import java.io.*;
 
@@ -26,7 +29,7 @@ public class Main {
                         , new Add(new Add(new Mul(nums[index], nums[index]), new Mul(nums[2], nums[index])), nums[1])
 //                        , new Mul(nums[2], new Add(nums[2], nums[1]))
                 };
-                System.out.println("|-" + new Eq((Node) toCalc[0], (Node) toCalc[1] ));
+                System.out.println("|-" + new Eq((Node) toCalc[0], (Node) toCalc[1]));
                 Node truth = PCalculus.SCHEMES[0].apply(ImmutableMap.of(
                         "A", new Eq(Arithmetic.Z, Arithmetic.Z),
                         "B", new Eq(Arithmetic.Z, Arithmetic.Z)
@@ -71,6 +74,7 @@ public class Main {
                 )), 2);
             }
         } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

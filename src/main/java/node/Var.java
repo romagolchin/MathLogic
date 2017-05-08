@@ -1,4 +1,7 @@
-import java.util.Collections;
+package node;
+
+import java.util.ArrayList;
+
 
 /**
  * Created by Roman on 18/02/2017.
@@ -6,7 +9,7 @@ import java.util.Collections;
 public class Var extends Node implements Term {
 
     public Var(String name) {
-        super(name, Collections.emptyList());
+        super(name, new ArrayList<>());
         vars.add(name);
         priority = 9;
     }
@@ -22,7 +25,7 @@ public class Var extends Node implements Term {
 
     @Override
     public boolean equals(Object o) {
-        return (o != null && (o.getClass() == getClass() && name.equals(((Var) o).name)
+        return (o != null && (o.getClass() == getClass() && name.equals(((Var) o).getName())
         || o.getClass() != getClass() && o.equals(this)));
     }
 }

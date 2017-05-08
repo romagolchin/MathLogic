@@ -1,3 +1,7 @@
+package node;
+
+import proofs.Arithmetic;
+import proofs.PCalculus;
 
 import java.util.HashMap;
 import java.util.Map;

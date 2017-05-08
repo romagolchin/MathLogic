@@ -1,3 +1,7 @@
+package node;
+
+import proofs.PCalculus;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -6,7 +10,7 @@ import java.util.Collections;
  */
 public class Neg extends Node {
     public Neg(Node child) {
-        super(PCalculus.NEG, new ArrayList<>(Collections.singletonList(child)));
+        super(PCalculus.NOT, new ArrayList<>(Collections.singletonList(child)));
         priority = 3;
     }
 

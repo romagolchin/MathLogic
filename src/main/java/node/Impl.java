@@ -1,3 +1,7 @@
+package node;
+
+import proofs.PCalculus;
+
 /**
  * Created by Roman on 24/02/2017.
  */
@@ -7,7 +11,7 @@ public class Impl extends BinaryNode {
         priority = 0;
     }
 
-    public Impl(Node toCopy) {
+    protected Impl(Node toCopy) {
         super(toCopy);
     }
 

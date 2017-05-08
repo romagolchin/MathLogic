@@ -1,4 +1,7 @@
+package proofs;
+
 import com.google.common.collect.ImmutableMap;
+import node.*;
 
 import java.util.*;
 
@@ -10,7 +13,7 @@ public class PCalculus {
     public static final String IMPL = "->";
     public static final String AND = "&";
     public static final String OR = "|";
-    public static final String NEG = "!";
+    public static final String NOT = "!";
     public static final String FORALL = "@";
     public static final String EXISTS = "?";
     public static final String TERM = "theta";
@@ -19,22 +22,22 @@ public class PCalculus {
     public static final String FORMULA = "f";
     public static final String FORMULA_SUBST = "f[a:=theta]";
 
+    public static final Var A = new Var("A");
+    public static final Var B = new Var("B");
+    public static final Var C = new Var("C");
 
     public static final Node[] SCHEMES = {
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Impl(new Var("A"), new Var("B")),
-                    new Impl(new Impl(new Var("A"), new Impl(new Var("B"), new Var("C"))),
-                            new Impl(new Var("A"), new Var("C")))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Impl(new Var("A"), new Impl(new Var("B"), new Var("A"))),
-            new Scheme(FORALL),
-            new Scheme(EXISTS)
+            new Impl(A, new Impl(B, A)),
+            new Impl(new Impl(A, B),
+                    new Impl(new Impl(A, new Impl(B, C)), new Impl(A, C))),
+            new Impl(A, new Impl(B, new And(A, B))),
+            new Impl(new And(A, B), A),
+            new Impl(new And(A, B), B),
+            new Impl(A, new Or(A, B)),
+            new Impl(B, new Or(A, B)),
+            new Impl(new Impl(A, C), new Impl(new Impl(B, C), new Impl(new Or(A, B), C))),
+            new Impl(new Impl(A, B), new Impl(new Impl(A, new Not(B)), new Not(A))),
+            new Impl(new Not(new Not(B)), B)
     };
 
     public static Node MP(Node f, int... times) {
@@ -42,7 +45,7 @@ public class PCalculus {
         final int oldTimes = t;
         System.out.println(f);
         while (f instanceof Impl && t > 0) {
-            f = f.children.get(1);
+            f = f.getChildren().get(1);
             System.out.println(f);
             --t;
         }
@@ -134,8 +137,6 @@ public class PCalculus {
 
     // hypo -> f, hypo -> f -> g, h = f->g
     public static Impl deduction(Node hypo, Impl f, Impl h) {
-//        System.err.println(f);
-//        System.err.println(h);
         if (!hypo.equals(f.getLeft()))
             throw new IllegalArgumentException("f does not contain hypo " + f + " " + hypo);
         else if (!hypo.equals(h.getLeft())) {
@@ -150,7 +151,7 @@ public class PCalculus {
     }
 
     public static Impl deduction(Node hypo) {
-        System.out.println(new Impl(new Impl(hypo, new Impl(new Impl(hypo, hypo), hypo))));
+        System.out.println(new Impl(hypo, new Impl(new Impl(hypo, hypo), hypo)));
         System.out.println(new Impl(hypo, new Impl(hypo, hypo)));
         return (Impl) MP(SCHEMES[1].apply(ImmutableMap.of("A", hypo,
                 "B", new Impl(hypo, hypo), "C", hypo)), 2);

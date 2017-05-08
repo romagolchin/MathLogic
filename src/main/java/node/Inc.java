@@ -1,5 +1,8 @@
+package node;
 
 import com.google.common.collect.ImmutableMap;
+import proofs.Arithmetic;
+import proofs.PCalculus;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +21,7 @@ public class Inc extends Node implements Term, Calculable {
         this.number = number;
         if (node instanceof Inc) {
             this.number += ((Inc) node).number;
-            children = new ArrayList<>(((Inc) node).children);
+            children = new ArrayList<>(node.getChildren());
         }
         priority = 7;
     }
@@ -89,5 +92,9 @@ public class Inc extends Node implements Term, Calculable {
                 || getOperand().equals(Arithmetic.Z)
 //                || getOperand() instanceof Calculable && ((Calculable) getOperand()).isCalculated()
         );
+    }
+
+    public static Node create(Node node, int number) {
+        return number == 0 ? node : new Inc(node, number);
     }
 }

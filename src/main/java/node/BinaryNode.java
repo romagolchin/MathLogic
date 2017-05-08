@@ -1,3 +1,8 @@
+package node;
+
+import proofs.Arithmetic;
+import proofs.PCalculus;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -38,4 +43,16 @@ public class BinaryNode extends Node {
         String rs = getRight().priority < priority ? "(" + getRight().toString() + ")" : getRight().toString();
         return ls + name + rs;
     }
+
+    public static BinaryNode newBinaryNode(String op, Node left, Node right) {
+        if (op.equals(PCalculus.OR))
+            return new Or(left, right);
+        else if (op.equals(PCalculus.AND))
+            return new And(left, right);
+        else if (op.equals(Arithmetic.ADD))
+            return new Add(left, right);
+        else
+            return new Mul(left, right);
+    }
+
 }

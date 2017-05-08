@@ -1,5 +1,9 @@
+package node;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.sun.istack.internal.Nullable;
+import proofs.PCalculus;
 
 import java.util.*;
 
@@ -12,7 +16,17 @@ public class Node {
     @Nullable
     protected List<Node> children;
     protected Set<String> vars;
+    //todo initialize and update properly
+    protected Set<String> freeVars;
     protected int priority;
+
+    public Set<String> getFreeVars() {
+        return freeVarsHelper(new HashSet<>(), this);
+    }
+
+    public List<Node> getChildren() {
+        return children;
+    }
 
     public String getName() {
         return name;
@@ -23,7 +37,31 @@ public class Node {
         return vars;
     }
 
+    private static Set<String> freeVarsHelper(Set<String> curBoundVars, Node node) {
+        HashSet<String> res = new HashSet<>();
+        String bound = null;
+        if (node.freeVars != null) {
+            return node.freeVars;
+        }
+        if (node instanceof Var) {
+            if (!curBoundVars.contains(node.name)) {
+                return node.freeVars = new HashSet<>(Collections.singleton(node.name));
+            }
+        } else {
+            if (node instanceof Quantified) {
+                bound = ((Quantified) node).getVariable();
+                curBoundVars.add(bound);
+            }
+            for (Node child : node.children) {
+                res.addAll(freeVarsHelper(curBoundVars, child));
+            }
+        }
+        curBoundVars.remove(bound);
+        return node.freeVars = res;
+    }
+
     public Node(String name, List<Node> children) {
+        freeVars = null;
         this.name = name;
         this.children = children;
         updateVars();
@@ -31,11 +69,12 @@ public class Node {
         isBinOperator = false;
     }
 
-    public Node(Node toCopy) {
-        this.name = toCopy.name;
+    protected Node(Node toCopy) {
+        this.name = toCopy.getName();
         this.children = new ArrayList<>();
-        toCopy.children.forEach(node -> this.children.add(node.copy()));
+        toCopy.getChildren().forEach(node -> this.children.add(node.copy()));
         this.vars = new HashSet<>(toCopy.vars);
+        this.freeVars = new HashSet<>(toCopy.freeVars);
         this.isBinOperator = toCopy.isBinOperator;
         this.priority = toCopy.priority;
     }
@@ -50,8 +89,8 @@ public class Node {
 
             while (cur instanceof Quantified) {
                 Var var = new Var(((Quantified) cur).getVariable());
-                if (applyMap.containsKey(var.name)) {
-                    Impl impl = new Impl(cur, cur.children.get(0).subst(var, applyMap.get(var.name)));
+                if (applyMap.containsKey(var.getName())) {
+                    Impl impl = new Impl(cur, cur.getChildren().get(0).subst(var, applyMap.get(var.getName())));
                     cur = PCalculus.MP(impl);
                 }
             }
@@ -89,6 +128,7 @@ public class Node {
 
     protected void updateVars() {
         vars = new HashSet<>();
+//        freeVars = new HashSet<>();
         if (children != null) {
             for (Node child : children) {
                 if (child == null) {
@@ -111,16 +151,14 @@ public class Node {
                 // attempt to substitute bound variable
                 if (q.getVariable().equals(var.getName()))
                     return copy();
-                else if ((theta)
-                        .vars
-                        .contains(q
-                                .getVariable()))
+                else if (theta.vars
+                        .contains(q.getVariable()))
                     throw new IllegalArgumentException("term " +
                             theta + " is not free to substitute variable " + var + " in formula " + this);
             }
             Node that = copy();
             for (int i = 0; i < children.size(); i++)
-                that.children.set(i, children.get(i).subst(var, theta));
+                that.getChildren().set(i, children.get(i).subst(var, theta));
             that.updateVars();
             return that;
         }
@@ -155,8 +193,8 @@ public class Node {
         Node node = (Node) o;
 
         if (isBinOperator != node.isBinOperator) return false;
-        if (name != null ? !name.equals(node.name) : node.name != null) return false;
-        if (children != null ? !children.equals(node.children) : node.children != null) return false;
+        if (name != null ? !name.equals(node.getName()) : node.getName() != null) return false;
+        if (children != null ? !children.equals(node.getChildren()) : node.getChildren() != null) return false;
         return vars != null ? vars.equals(node.vars) : node.vars == null;
 
     }
@@ -169,14 +207,6 @@ public class Node {
         result = 31 * result + (vars != null ? vars.hashCode() : 0);
         return result;
     }
-
-    public static void test() {
-        Eq e = new Eq(new Var("a"), new Var("b"));
-        Node e1 = e.copy();
-        e1.children = null;
-        System.out.println("null or not: " + (e.children == null));
-    }
-
 
     public void prove() {
         PCalculus.generalize(this, true);
@@ -217,7 +247,6 @@ public class Node {
             String substring = sb.toString().substring(0, max - var.length() + j + 1);
             renameMap.put(var, new Var("x" + substring));
             reverseMap.put("x" + substring, new Var(var));
-//            res = res.subst(new Var(var), new Var("x" + sb.toString().substring(0, max + j + 1)));
             ++j;
         }
 //        System.out.println("rename to fresh vars");
@@ -233,6 +262,37 @@ public class Node {
 //        System.out.println("use generalized lemma with fresh vars");
         res = res.apply(appMap, true);
         return res;
+    }
+
+    public boolean match(Node scheme) {
+        Multimap<String, Node> res;
+        try {
+            res = matchHelper(this, scheme);
+            for (String s : res.keySet()) {
+                if (res.get(s).size() != 1)
+                    return false;
+            }
+            return true;
+        } catch (IllegalArgumentException e) {
+//            fixme remove after debug
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static Multimap<String, Node> matchHelper(Node node, Node scheme) {
+        Multimap<String, Node> res = HashMultimap.create();
+        if (scheme instanceof Var) {
+            Var var = (Var) scheme;
+            res.put(var.getName(), node);
+            return res;
+        }
+        if (node.getChildren().size() == scheme.getChildren().size()) {
+            for (int i = 0; i < node.getChildren().size(); i++) {
+                res.putAll(matchHelper(node.getChildren().get(i), scheme.getChildren().get(i)));
+            }
+        }
+        throw new IllegalArgumentException(node + " and " + scheme + " have different structure");
     }
 
 }

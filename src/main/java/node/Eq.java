@@ -1,3 +1,6 @@
+package node;
+
+import proofs.Arithmetic;
 
 /**
  * Created by Roman on 19/02/2017.

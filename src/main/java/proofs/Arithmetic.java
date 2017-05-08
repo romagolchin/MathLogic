@@ -1,8 +1,8 @@
+package proofs;
 
-
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import node.*;
 
 import java.util.*;
 
@@ -671,12 +671,12 @@ public class Arithmetic {
         PCalculus.MP(new Impl(new And(base, genStep), f));
     }
 
-    static Eq applySymmetry(Eq eq) {
+    public static Eq applySymmetry(Eq eq) {
         return (Eq) PCalculus.MP(
                 SYMMETRY.apply(ImmutableMap.of("x", eq.getLeft(), "y", eq.getRight()), true));
     }
 
-    static Eq applyTransitivity(Eq first, Eq second) {
+    public static Eq applyTransitivity(Eq first, Eq second) {
         return (Eq) PCalculus.MP(TRANSITIVITY.rename(ImmutableMap.of("x", first.getLeft(),
                 "y", first.getRight(), "z", second.getRight())), 2);
     }

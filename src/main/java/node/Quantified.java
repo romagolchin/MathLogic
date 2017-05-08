@@ -1,3 +1,5 @@
+package node;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.regex.Matcher;
@@ -20,7 +22,7 @@ public class Quantified extends Node {
     public Quantified(Node toCopy) {
         super(toCopy);
         if (toCopy instanceof Quantified) {
-            variable = ((Quantified) toCopy).variable;
+            variable = ((Quantified) toCopy).getVariable();
         }
     }
 
