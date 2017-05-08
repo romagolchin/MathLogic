@@ -3,10 +3,6 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/dictionaries
-
 /out/
 
 
