@@ -22,7 +22,7 @@ public class BinaryNode extends Node {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new BinaryNode(this);
     }
 

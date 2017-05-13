@@ -20,7 +20,7 @@ public class Eq extends BinaryNode {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Eq(this);
     }
 }

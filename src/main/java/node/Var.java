@@ -19,7 +19,7 @@ public class Var extends Node implements Term {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Var(this);
     }
 

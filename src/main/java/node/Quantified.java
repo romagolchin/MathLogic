@@ -27,7 +27,7 @@ public class Quantified extends Node {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Quantified(this);
     }
 

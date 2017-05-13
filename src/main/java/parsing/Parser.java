@@ -1,6 +1,8 @@
 package parsing;
 
 import node.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import proofs.Arithmetic;
 
 import java.io.BufferedReader;
@@ -14,7 +16,7 @@ import java.util.*;
 public class Parser {
     int line;
     Node proposition;
-    List<Node> assumptions;
+    List<Node> assumptions = new ArrayList<>();
     private BufferedReader reader;
     private Token[] tokensByPriority = {Token.OR, Token.AND, Token.ADD, Token.MUL};
 
@@ -34,13 +36,16 @@ public class Parser {
         return line;
     }
 
+    public Parser() {
+    }
+
     public Parser(BufferedReader reader) throws IOException {
         this(reader, true);
     }
 
-    public Parser(BufferedReader reader, boolean  header) throws IOException {
+    public Parser(BufferedReader reader, boolean header) throws IOException {
         this.reader = reader;
-        line = 1;
+        line = 0;
         if (header)
             header();
     }
@@ -58,7 +63,7 @@ public class Parser {
         lexer.next();
     }
 
-    private List<Node> getArgs() {
+    @Nullable private List<Node> getArgs() {
         List<Node> args = null;
         if (accept(Token.OPEN)) {
             args = new ArrayList<>();
@@ -125,7 +130,8 @@ public class Parser {
     private Node predicate() {
         if (lexer.token == Token.PRED) {
             lexer.next();
-            return new Node(lexer.pred, getArgs());
+            List<Node> args = getArgs();
+            return new Node(lexer.pred, args == null ? new ArrayList<>() : args);
         } else {
             Node left = leftAssociative(2);
             if (!accept(Token.EQ)) {
@@ -202,19 +208,25 @@ public class Parser {
         line++;
     }
 
+    @Nullable
+    public Node nextExpr(@NotNull String expr) {
+        Node implication = null;
+        if (!expr.isEmpty()) {
+            lexer = new Lexer(expr);
+            lastTerm = null;
+            implication = implication();
+//            System.out.println(implication);
+        }
+        line++;
+        return implication;
+    }
+
     public Node nextExpr() throws IOException {
         String cur;
-        Node implication = null;
-        if ((cur = reader.readLine()) != null) {
-            if (!cur.isEmpty()) {
-                lexer = new Lexer(cur);
-                lastTerm = null;
-                implication = implication();
-                System.out.println(implication);
-            }
-            line++;
-        } else
-            throw new IndexOutOfBoundsException("failed to get next expression");
+        Node implication;
+        if ((cur = reader.readLine()) == null)
+            throw new IOException("failed to get next expression");
+        implication = nextExpr(cur);
         if (implication != null)
             implication.getFreeVars();
         return implication;
@@ -235,13 +247,14 @@ public class Parser {
     public static void main(String[] args) {
         try (BufferedReader reader = new BufferedReader(new FileReader("proof"))) {
             Parser parser = new Parser(reader);
-            for (;;) {
+            for (; ; ) {
                 try {
                     parser.nextExpr();
                 } catch (IndexOutOfBoundsException e) {
                     break;
                 }
             }
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 }

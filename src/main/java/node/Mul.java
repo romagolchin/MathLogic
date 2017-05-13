@@ -21,7 +21,7 @@ public class Mul extends BinaryNode implements Term, Calculable {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Mul(this);
     }
 

@@ -14,6 +14,9 @@ import java.util.Collections;
 public class Inc extends Node implements Term, Calculable {
     int number;
 
+    public int getNumber() {
+        return number;
+    }
 
     public Inc(Node node, int number) {
         super(Arithmetic.INC,
@@ -39,7 +42,7 @@ public class Inc extends Node implements Term, Calculable {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Inc(this, true);
     }
 
@@ -59,7 +62,7 @@ public class Inc extends Node implements Term, Calculable {
         if (isCalculated()) {
 //            System.out.println("end Inc " + number);
             return copy();
-        } else {
+        } else if (number > 0) {
 
             Node resOperand = ((Calculable) getOperand()).calculate();
             if (resOperand != null) {
@@ -83,7 +86,8 @@ public class Inc extends Node implements Term, Calculable {
 
     @Override
     public boolean equals(Object o) {
-        return super.equals(o) || (number == 0 && getOperand().equals(o));
+        return o instanceof Inc && super.equals(o) && number == ((Inc) o).number
+                || (number == 0 && getOperand().equals(o));
     }
 
     @Override

@@ -24,7 +24,8 @@ public class Arithmetic {
     public static final Inc A1 = new Inc(new Var("a"));
     public static final Inc B1 = new Inc(new Var("b"));
     public static final Inc C1 = new Inc(new Var("c"));
-    public static final Var Z = new Var(ZERO);
+//    public static final Var Z = new Var(ZERO);
+    public static final Node Z = new Node(ZERO, new ArrayList<>());
 
     /**
      * a' + b = (a + b)'
@@ -51,7 +52,7 @@ public class Arithmetic {
                     Impl step = new Impl(this, subst(B, B1));
 //                    System.out.println("STEP " + step);
                     Impl reverseAssumption = (Impl) SYMMETRY.rename(ImmutableMap.of("x", getLeft(), "y", getRight()));
-                    PCalculus.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", A1, "b", B)));
+                    Deductions.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", A1, "b", B)));
                     // (a + b)' = a + b'
                     applySymmetry((Eq) AXIOMS[4]);
                     // (a + b)' = a' + b -> a + b' = a' + b
@@ -61,18 +62,18 @@ public class Arithmetic {
 
                     )));
                     im = PCalculus.useImplTransitivity(reverseAssumption, im);
-                    Node node = PCalculus.deduction(this, AXIOMS[0].rename(ImmutableMap.of("a", new Add(A, B1),
+                    Node node = Deductions.deduction(this, AXIOMS[0].rename(ImmutableMap.of("a", new Add(A, B1),
                             "b", new Add(A1, B))));
-                    node = PCalculus.deduction(this, im, (Impl) node);
-                    first = PCalculus.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", A1, "b", B)));
-                    second = PCalculus.deduction(this, (Impl) node,
-                            PCalculus.deduction(this, SYMMETRY.rename(ImmutableMap.of(
+                    node = Deductions.deduction(this, im, (Impl) node);
+                    first = Deductions.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", A1, "b", B)));
+                    second = Deductions.deduction(this, (Impl) node,
+                            Deductions.deduction(this, SYMMETRY.rename(ImmutableMap.of(
                                     "x", new Inc(new Add(A, B1)), "y", new Inc(new Add(A1, B))
                             ))));
-                    Impl deduction = PCalculus.deduction(this, TRANSITIVITY.apply(ImmutableMap.of(
+                    Impl deduction = Deductions.deduction(this, TRANSITIVITY.apply(ImmutableMap.of(
                             "x", new Add(A1, B1), "y", new Inc(new Add(A1, B)), "z", new Inc(new Add(A, B1))), true));
-                    PCalculus.deduction(this, (Impl) second,
-                            PCalculus.deduction(this, (Impl) first, deduction));
+                    Deductions.deduction(this, (Impl) second,
+                            Deductions.deduction(this, (Impl) first, deduction));
                     induction(base, step, this, B);
                     super.prove();
                 }
@@ -92,15 +93,15 @@ public class Arithmetic {
                     AXIOMS[5].rename(ImmutableMap.of("a", Z));
                     Impl stepOfBase = new Impl(base, base.subst(A, A1));
                     Eq eq = new Eq(new Add(Z, A), A);
-                    Impl phi = PCalculus.deduction(eq, AXIOMS[4].rename(
+                    Impl phi = Deductions.deduction(eq, AXIOMS[4].rename(
                             ImmutableMap.of("a", Z, "b", A)
                     ));
                     Impl psy = (Impl) AXIOMS[0].rename(ImmutableMap.of(
                             "a", new Add(Z, A), "b", A));
                     // 0 + a = a -> 0 + a' = a'
-                    PCalculus.deduction(eq, psy,
-                            PCalculus.deduction(eq, phi,
-                                    PCalculus.deduction(
+                    Deductions.deduction(eq, psy,
+                            Deductions.deduction(eq, phi,
+                                    Deductions.deduction(
                                             eq, TRANSITIVITY.rename(ImmutableMap.of(
                                                     "x", new Add(Z, A1),
                                                     "y", new Inc(new Add(Z, A)),
@@ -112,28 +113,28 @@ public class Arithmetic {
                     // a + b = b + a -> a + b' = b' + a
                     Node step = new Impl(this, subst(B, B1));
                     // a + b = b + a -> a + b' = (a + b)'
-                    Impl first = PCalculus.deduction(this, AXIOMS[4]);
+                    Impl first = Deductions.deduction(this, AXIOMS[4]);
                     // a + b = b + a -> (a + b)' = (b + a)'
                     Impl second = (Impl)
                             AXIOMS[0].rename(ImmutableMap.of("a", new Add(A, B), "b", new Add(B, A)));
-                    Impl node = PCalculus.deduction(this, TRANSITIVITY.rename(ImmutableMap.of("x", new Add(A, B1),
+                    Impl node = Deductions.deduction(this, TRANSITIVITY.rename(ImmutableMap.of("x", new Add(A, B1),
                             "y", new Inc(new Add(A, B)), "z", new Inc(new Add(B, A)))));
                     // a + b = b + a -> a + b' = (b + a)'
-                    Impl impl = PCalculus.deduction(this, second,
-                            PCalculus.deduction(this, first, node));
+                    Impl impl = Deductions.deduction(this, second,
+                            Deductions.deduction(this, first, node));
 //                    System.out.println("node = " + node);
                     // this -> b' + a = (b + a)'
-                    first = PCalculus.deduction(this, AXIOM_4_ANALOGUE.rename(ImmutableMap.of("a", B, "b", A)));
+                    first = Deductions.deduction(this, AXIOM_4_ANALOGUE.rename(ImmutableMap.of("a", B, "b", A)));
                     // this -> (b + a)' = b' + a
                     second = PCalculus.useImplTransitivity(first, (Impl) SYMMETRY.rename(ImmutableMap.of(
                             "x", new Add(B1, A),
                             "y", new Inc(new Add(B, A))
                     )));
-                    node = PCalculus.deduction(this,
+                    node = Deductions.deduction(this,
                             TRANSITIVITY.rename(ImmutableMap.of("x", new Add(A, B1),
                                     "y", new Inc(new Add(B, A)), "z", new Add(B1, A))));
-                    PCalculus.deduction(this, second,
-                            PCalculus.deduction(this, impl, node));
+                    Deductions.deduction(this, second,
+                            Deductions.deduction(this, impl, node));
 
                     induction(base, step, this, B);
                     super.prove();
@@ -156,32 +157,32 @@ public class Arithmetic {
                     // STEP
                     // this -> a + b + c' = a + (b + c')
                     // this -> (b + c') = (b + c)'
-                    Impl antecedent = PCalculus.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", B, "b", C)));
+                    Impl antecedent = Deductions.deduction(this, AXIOMS[4].rename(ImmutableMap.of("a", B, "b", C)));
                     // this -> a + (b + c') = a + (b + c)'
-                    Impl transLeft = PCalculus.deduction(this, antecedent,
-                            PCalculus.deduction(this, ADD_SUBST_LEMMA.rename(ImmutableMap.of(
+                    Impl transLeft = Deductions.deduction(this, antecedent,
+                            Deductions.deduction(this, ADD_SUBST_LEMMA.rename(ImmutableMap.of(
                                     "a", A, "b", ((BinaryNode) antecedent.getRight()).getLeft(),
                                     "c", ((BinaryNode) antecedent.getRight()).getRight()
                             ))));
                     // ... = (a + (b + c))'
-                    Impl transRight = PCalculus.deduction(this, AXIOMS[4].rename(ImmutableMap.of(
+                    Impl transRight = Deductions.deduction(this, AXIOMS[4].rename(ImmutableMap.of(
                             "a", A, "b", new Add(B, C)
                     )));
                     List<Eq> transList = Lists.newArrayList((Eq) transLeft.getRight(), (Eq) transRight.getRight());
 //                    System.out.println(transList);
-                    System.err.println("transList " + transList.get(0) + " " + transList.get(1));
+//                    System.err.println("transList " + transList.get(0) + " " + transList.get(1));
                     // this -> a + (b + c') = (a + (b + c))'
                     Eq res = processEqChain(this, transList);
                     transList.clear();
                     // this -> a + b + c' = (a + b + c)'
-                    transList.add((Eq) PCalculus.deduction(this,
+                    transList.add((Eq) Deductions.deduction(this,
                             AXIOMS[4].rename(ImmutableMap.of("a", new Add(A, B), "b", C))).getRight());
                     transList.add((Eq) ((BinaryNode)
                             AXIOMS[0].rename(ImmutableMap.of("a", getLeft(), "b", getRight()))).getRight());
                     transList.add((Eq) PCalculus.useImplTransitivity(new Impl(this, res),
                             (Impl) SYMMETRY.rename(ImmutableMap.of(
                                     "x", getRight().subst(C, C1), "y", new Inc(getRight())))).getRight());
-                    System.err.println(processEqChain(this, transList));
+//                    System.err.println(processEqChain(this, transList));
                     induction(subst(C, Z), new Impl(this, subst(C, C1)), this, C);
                     super.prove();
                 }
@@ -210,7 +211,7 @@ public class Arithmetic {
                         baseEq = applyTransitivity(new Eq(baseEqs.get(0).getLeft(), baseEqs.get(i).getRight()),
                                 baseEqs.get(i + 1));
                     }
-                    System.err.println(baseEq);
+//                    System.err.println(baseEq);
                     applyTransitivity((Eq) AXIOMS[6].rename(ImmutableMap.of("a", A1)), applySymmetry(baseEq));
                     Impl step = new Impl(this, subst(B, B1));
                     Eq assumption = new Eq(new Mul(A1, B), new Add(new Mul(A, B), B));
@@ -219,7 +220,7 @@ public class Arithmetic {
                     List<Impl> impls = new ArrayList<>();
                     List<Eq> eqs = new ArrayList<>();
                     // a' * b + a = a + a' * b
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", new Mul(A1, B), "b", A
                             ))));
@@ -228,12 +229,12 @@ public class Arithmetic {
                             "a", A, "b", new Mul(A1, B), "c", new Add(new Mul(A, B), B)
                     )));
                     // = ab + b + a
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", A, "b", new Add(new Mul(A, B), B)
                             ))));
                     // = ab + (b + a)
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ADD_ASSOCIATIVITY.rename(ImmutableMap.of(
                                     "a", new Mul(A, B), "b", B, "c", A
                             ))));
@@ -242,40 +243,40 @@ public class Arithmetic {
                     Eq eq = (Eq) PCalculus.MP(ADD_SUBST_LEMMA.rename(ImmutableMap.of(
                             "a", new Mul(A, B), "b", new Add(B, A), "c", new Add(A, B)
                     )));
-                    impls.add(PCalculus.deduction(assumption, eq));
+                    impls.add(Deductions.deduction(assumption, eq));
                     // = ab + a + b
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             applySymmetry((Eq) ADD_ASSOCIATIVITY.rename(ImmutableMap.of(
                                     "a", new Mul(A, B), "b", A, "c", B
                             )))));
                     // = b + (ab + a)
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", new Add(new Mul(A, B), A), "b", B
                             ))));
                     // = b + ab'
-                    impls.add(PCalculus.useImplTransitivity(PCalculus.deduction(assumption,
+                    impls.add(PCalculus.useImplTransitivity(Deductions.deduction(assumption,
                             ((Eq) AXIOMS[7]).reverse()), (Impl)
                             ADD_SUBST_LEMMA.rename(ImmutableMap.of("a", B, "b", new Add(new Mul(A, B), A),
                                     "c", new Mul(A, B1)))));
                     // = ab' + b
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", B, "b", new Mul(A, B1)
                             ))));
                     for (Impl impl : impls)
                         eqs.add((Eq) impl.getRight());
                     Eq curEq = processEqChain(assumption, eqs);
-                    System.err.println("curEq " + curEq);
+//                    System.err.println("curEq " + curEq);
                     curEq = (Eq) PCalculus.useImplTransitivity(new Impl(assumption, curEq), (Impl) AXIOMS[0].rename(
                             ImmutableMap.of("a", curEq.getLeft(), "b", curEq.getRight()))).getRight();
-                    System.err.println("curEq " + curEq);
+//                    System.err.println("curEq " + curEq);
                     eqs.clear();
                     impls.clear();
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             AXIOMS[4].rename(ImmutableMap.of("a", new Mul(A1, B), "b", A))));
                     impls.add(new Impl(assumption, curEq));
-                    impls.add(PCalculus.deduction(assumption,
+                    impls.add(Deductions.deduction(assumption,
                             ((Eq) AXIOMS[4]).reverse().rename(ImmutableMap.of("a", new Mul(A, B1), "b", B))));
                     for (Impl impl : impls)
                         eqs.add((Eq) impl.getRight());
@@ -283,7 +284,7 @@ public class Arithmetic {
                     );
                     processEqChain(this, Lists.newArrayList(
                             // a' * b' = a'b + a'
-                            (Eq) PCalculus.deduction(this,
+                            (Eq) Deductions.deduction(this,
                                     AXIOMS[7].rename(ImmutableMap.of(
                                             "a", A1, "b", B
                                     ))).getRight(),
@@ -307,9 +308,9 @@ public class Arithmetic {
             Impl rightImpl = new Impl(hypo, eqs.get(i + 1));
 //            System.err.println(leftImpl);
 //            System.err.println(rightImpl);
-            impl = PCalculus.deduction(hypo, rightImpl,
-                    PCalculus.deduction(hypo, leftImpl,
-                            PCalculus.deduction(hypo, TRANSITIVITY.rename(
+            impl = Deductions.deduction(hypo, rightImpl,
+                    Deductions.deduction(hypo, leftImpl,
+                            Deductions.deduction(hypo, TRANSITIVITY.rename(
                                     ImmutableMap.of(
                                             "x", (eqs.get(0)).getLeft(),
                                             "y", (eqs.get(i + 1)).getLeft(),
@@ -340,17 +341,17 @@ public class Arithmetic {
                     // proof of step:
 
                     List<Impl> chainImpls = Lists.newArrayList(
-                            PCalculus.deduction(prop.reverse(), AXIOMS[7].apply(ImmutableMap.of(
+                            Deductions.deduction(prop.reverse(), AXIOMS[7].apply(ImmutableMap.of(
                                     "a", Z
                             ), true, true)),
-                            PCalculus.deduction(prop.reverse(), ADD_COMMUTATIVITY.rename(ImmutableMap.of(
+                            Deductions.deduction(prop.reverse(), ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", new Mul(Z, B), "b", Z
                             ))),
                             // 0 * b = 0 -> 0 + 0 * b = 0 + 0
                             (Impl) ADD_SUBST_LEMMA.rename(ImmutableMap.of(
                                     "a", Z, "b", prop.getRight(), "c", prop.getLeft()
                             )),
-                            PCalculus.deduction(prop.reverse(), AXIOMS[5].rename(ImmutableMap.of(
+                            Deductions.deduction(prop.reverse(), AXIOMS[5].rename(ImmutableMap.of(
                                     "a", Z
                             )))
                     );
@@ -381,41 +382,41 @@ public class Arithmetic {
                     ));
                     System.out.println(axiom);
                     // b=c->0*b=0*c
-                    PCalculus.deduction(eq, PCalculus.MP(axiom, 2));
+                    Deductions.deduction(eq, PCalculus.MP(axiom, 2));
                     Impl step = new Impl(this, subst(A, A1));
                     //assuming b=c prove a'b = ab+b = ab + c=c + ab
                     // b=c->a'b=ab+b
-                    Eq axiomEq = (Eq) PCalculus.deduction(eq, AXIOM_7_ANALOGUE).getRight();
+                    Eq axiomEq = (Eq) Deductions.deduction(eq, AXIOM_7_ANALOGUE).getRight();
                     List<Eq> eqs = Lists.newArrayList(
                             axiomEq,
                             (Eq) ((Impl) ADD_SUBST_LEMMA.rename(ImmutableMap.of(
                                     "a", new Mul(A, B), "b", B, "c", C
                             ))).getRight(),
-                            (Eq) PCalculus.deduction(eq, ADD_COMMUTATIVITY.rename(ImmutableMap.of(
+                            (Eq) Deductions.deduction(eq, ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", new Mul(A, B), "b", C
                             ))).getRight()
                     );
-                    PCalculus.deduction(eq, ADD_SUBST_LEMMA.rename(ImmutableMap.of(
+                    Deductions.deduction(eq, ADD_SUBST_LEMMA.rename(ImmutableMap.of(
                             "a", C, "b", new Mul(A, B), "c", new Mul(A, C)
                     )));
                     Impl impl = (Impl) PCalculus.SCHEMES[1].apply(ImmutableMap.of(
                             "A", eq, "B", getRight(), "C", new Eq(new Add(C, new Mul(A, B)), new Add(C, new Mul(A, C)))
                     ));
                     System.out.println(impl);
-                    Impl axiomImpl = PCalculus.deduction(eq, applySymmetry((Eq) AXIOM_7_ANALOGUE.apply(ImmutableMap.of(
+                    Impl axiomImpl = Deductions.deduction(eq, applySymmetry((Eq) AXIOM_7_ANALOGUE.apply(ImmutableMap.of(
                             "b", C
                     ), true, true)));
                     List<Impl> impls = Lists.newArrayList(
                             // this -> eq -> a'b = c + ab
-                            PCalculus.deduction(this, new Impl(eq, processEqChain(eq, eqs))),
+                            Deductions.deduction(this, new Impl(eq, processEqChain(eq, eqs))),
                             // this -> eq -> c + ab = c + ac
                             (Impl) PCalculus.MP(PCalculus.reverseImpl(impl)),
                             // this -> eq -> c + ac = ac + c
-                            PCalculus.deduction(this, PCalculus.deduction(eq, ADD_COMMUTATIVITY.rename(ImmutableMap.of(
+                            Deductions.deduction(this, Deductions.deduction(eq, ADD_COMMUTATIVITY.rename(ImmutableMap.of(
                                     "a", C, "b", new Mul(A, C)
                             )))),
                             // this -> eq -> ac + c = a'c
-                            PCalculus.deduction(this, axiomImpl)
+                            Deductions.deduction(this, axiomImpl)
                     );
                     eqs.clear();
                     for (Impl im : impls)
@@ -429,7 +430,7 @@ public class Arithmetic {
                         Impl transImpl = (Impl) TRANSITIVITY.rename(ImmutableMap.of(
                                 "x", leftEq.getLeft(), "y", leftEq.getRight(), "z", rightEq.getRight()
                         ));
-                        PCalculus.deduction(this, eq, leftEq, rightEq, new Eq(leftEq.getLeft(), rightEq.getRight()));
+                        Deductions.deduction(this, eq, leftEq, rightEq, new Eq(leftEq.getLeft(), rightEq.getRight()));
                     }
                     induction(base, step, this, A);
                     super.prove();
@@ -520,35 +521,35 @@ public class Arithmetic {
                     Impl cur = (Impl) AXIOMS[0].rename(ImmutableMap.of("a", eq.getLeft(), "b", eq.getRight()));
                     List<Node> eqs = new ArrayList<>();
                     // a+b=a+c->a+b'=(a+b)'
-                    eqs.add(PCalculus.deduction(eq, AXIOM_4_ANALOGUE).getRight());
+                    eqs.add(Deductions.deduction(eq, AXIOM_4_ANALOGUE).getRight());
                     eqs.add(cur.getRight());
                     // a' + c = (a + c)'
                     Eq eqC = (Eq) AXIOM_4_ANALOGUE.rename(ImmutableMap.of("a", A, "b", C));
-                    System.err.println(eqC);
-                    System.err.println(PCalculus.deduction(eq, eqC));
+//                    System.err.println(eqC);
+//                    System.err.println(Deductions.deduction(eq, eqC));
                     // a+b=a+c -> (a + c)' = a' + c
-                    eqs.add(PCalculus.deduction(eq,
-                            PCalculus.deduction(eq, eqC),
-                            PCalculus.deduction(eq,
+                    eqs.add(Deductions.deduction(eq,
+                            Deductions.deduction(eq, eqC),
+                            Deductions.deduction(eq,
                                     SYMMETRY.rename(ImmutableMap.of("x", eqC.getLeft(), "y", eqC.getRight()))))
                             .getRight());
-                    System.err.println("EQUATIONS");
-                    for (Node n : eqs) {
-                        System.err.println(n);
-                    }
+//                    System.err.println("EQUATIONS");
+//                    for (Node n : eqs) {
+//                        System.err.println(n);
+//                    }
                     // prove (a+b)'=(a+c)' -> a' + b = a' + c by chain of equations
                     Impl impl = null;
                     for (int i = 0; i < eqs.size() - 1; ++i) {
                         // eq -> A = B
                         Impl leftImpl = new Impl(eq, new Eq(((BinaryNode) eqs.get(0)).getLeft(),
                                 ((BinaryNode) eqs.get(i)).getRight()));
-                        System.err.println(leftImpl);
+//                        System.err.println(leftImpl);
                         // eq -> B = C
                         Impl rightImpl = new Impl(eq, eqs.get(i + 1));
-                        System.err.println(rightImpl);
-                        impl = PCalculus.deduction(eq, rightImpl,
-                                PCalculus.deduction(eq, leftImpl,
-                                        PCalculus.deduction(eq, TRANSITIVITY.rename(
+//                        System.err.println(rightImpl);
+                        impl = Deductions.deduction(eq, rightImpl,
+                                Deductions.deduction(eq, leftImpl,
+                                        Deductions.deduction(eq, TRANSITIVITY.rename(
                                                 ImmutableMap.of(
                                                         "x", ((BinaryNode) eqs.get(0)).getLeft(),
                                                         "y", ((BinaryNode) eqs.get(i + 1)).getLeft(),
@@ -556,7 +557,7 @@ public class Arithmetic {
                                         ))
                                 ));
                     }
-                    Impl right = PCalculus.deduction(new Eq(B, C), impl);
+                    Impl right = Deductions.deduction(new Eq(B, C), impl);
                     impl = (Impl) PCalculus.SCHEMES[1].apply(ImmutableMap.of(
                             "A", new Eq(B, C), "B", new Eq(new Add(A, B), new Add(A, C)),
                             "C", new Eq(new Add(A1, B), new Add(A1, C))));
@@ -621,7 +622,7 @@ public class Arithmetic {
                 @Override
                 public void prove() {
                     Eq revEq = ((Eq) getLeft()).reverse();
-                    PCalculus.deduction(getLeft(),
+                    Deductions.deduction(getLeft(),
                             AXIOMS[1].apply(ImmutableMap.of(
                                     "a", new Var("y"), "b", new Var("x"), "c", new Var("z")), true));
                     Map<String, Node> map = new HashMap<>();

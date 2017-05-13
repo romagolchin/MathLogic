@@ -20,7 +20,7 @@ public class Add extends BinaryNode implements Term, Calculable {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Add(this);
     }
 

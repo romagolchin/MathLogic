@@ -5,17 +5,17 @@ import com.google.common.collect.Multimap;
 import node.*;
 import parsing.Parser;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Roman Golchin (romagolchin@gmail.com)
  */
 public class Checker {
 
-    static final String ERR_WRONG_FROM = "Вывод некорректен начиная с формулы номер %s";
+    static final String ERR_WRONG_FROM = "Вывод некорректен начиная с формулы номер %d";
     static final String ERR_TERM = "терм %s не свободен для подстановки в формулу %s вместо переменной %s";
     static final String ERR_FREE_VAR = "переменная %s входит свободно в формулу %s";
     static final String ERR_FV_ASSUMPTION =
@@ -23,46 +23,90 @@ public class Checker {
 
     static final String ERR_NO_PROOF = "Не доказано";
 
+    static final String ANN_HYPO = "Сх. акс. ";
+    static final String ANN_SCHEME = "Предп. ";
+    static final String ANN_MP = "M.P. ";
+
     Parser parser;
 
     boolean strict;
+    boolean deduction;
+    boolean annotation;
 
     Multimap<Node, Integer> rightPartToInds;
     HashMap<Node, Integer> leftPartToMinInd;
     HashSet<Node> proven;
 
     List<Node> curNodes;
+    List<AnnotatedNode> annotatedNodes = new ArrayList<>();
+    BufferedWriter writer;
 
-    public Checker(Parser parser) {
+    public Checker(Parser parser, BufferedWriter writer, boolean strict, boolean deduction, boolean annotation) {
         this.parser = parser;
         curNodes = new ArrayList<>();
         rightPartToInds = HashMultimap.create();
         leftPartToMinInd = new HashMap<>();
+        proven = new HashSet<>();
+        this.strict = strict;
+        this.writer = writer;
+        this.deduction = deduction;
+        this.annotation = annotation;
     }
 
 
-    public void checkAll() {
+    private void writeln(Object o) throws IOException {
+        writer.write(String.valueOf(o) + "\n");
+    }
+
+    public void checkAll() throws IOException {
         for (; ; ) {
             try {
                 Node formula = parser.nextExpr();
-                ProofType type = check(formula);
+                if (formula == null)
+                    continue;
+                ProofType type = null;
+                String error = "";
+                try {
+                    type = check(formula);
+                } catch (ProofException e) {
+                    error = e.getMessage();
+                }
                 if (type != null) {
                     if (formula instanceof Impl) {
                         Impl impl = (Impl) formula;
-                        rightPartToInds.put(impl.getRight(), parser.getLine() - 1);
-                        leftPartToMinInd.putIfAbsent(formula, parser.getLine() - 1);
+                        rightPartToInds.put(impl.getRight(), curNodes.size());
                     }
+                    leftPartToMinInd.putIfAbsent(formula, curNodes.size());
                     proven.add(formula);
+//                    if (type instanceof ProofType.Forall || type instanceof ProofType.Exists)
+//                        System.out.println(formula);
+                    if (deduction)
+                        annotatedNodes.add(new AnnotatedNode(formula, type));
                 } else {
-                    if (strict)
-                        throw new ProofException(ERR_WRONG_FROM + parser.getLine());
-                    else
-                        System.err.println(ERR_NO_PROOF);
+                    if (strict) {
+                        String message = String.format(ERR_WRONG_FROM, parser.getLine() - 1);
+                        writeln(error.isEmpty() ? message : message + ": " + error);
+                        return;
+                    }
                 }
-            } catch (IOException | IndexOutOfBoundsException e) {
+                if (annotation)
+                    writeln(String.format("(%d) %s (%s)", parser.getLine() - 1, String.valueOf(formula),
+                            type == null ? ERR_NO_PROOF : String.valueOf(type)));
+                curNodes.add(formula);
+            } catch (IOException e) {
                 break;
-            } catch (ProofException pe) {
-                System.err.println(pe.getMessage());
+            }
+        }
+        if (deduction) {
+            List<Node> assumptions = parser.getAssumptions();
+            writeln(assumptions.subList(0, assumptions.size() - 1).stream().map(Node::toString).collect(
+                    Collectors.joining(", ", "",
+                            "|-" + new Impl(assumptions.get(assumptions.size() - 1), parser.getProposition()))
+            ));
+            for (AnnotatedNode a : annotatedNodes) {
+                String str = assumptions.isEmpty() ? a.node.toString() :
+                        Deductions.lineBreakJoin(Deductions.deduction(assumptions.get(assumptions.size() - 1), a));
+                writer.write(str);
             }
         }
     }
@@ -74,10 +118,12 @@ public class Checker {
             if (left instanceof Quantified && left.getName().equals(PCalculus.FORALL)) {
                 Quantified quantified = (Quantified) left;
                 try {
-                    getSubst(node, quantified.getVariable(), quantified.getOperand(), impl.getRight());
+                    Node operand = quantified.getOperand().copy();
+                    operand.getFreeVars();
+                    getSubst(quantified.getVariable(), operand, impl.getRight());
                     return true;
                 } catch (ProofException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
                     return false;
                 }
             }
@@ -92,10 +138,12 @@ public class Checker {
             if (right instanceof Quantified && right.getName().equals(PCalculus.EXISTS)) {
                 Quantified quantified = (Quantified) right;
                 try {
-                    getSubst(node, quantified.getVariable(), quantified.getOperand(), impl.getLeft());
+                    Node operand = quantified.getOperand().copy();
+                    operand.getFreeVars();
+                    getSubst(quantified.getVariable(), quantified.getOperand(), impl.getLeft());
                     return true;
                 } catch (ProofException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
                     return false;
                 }
             }
@@ -104,7 +152,12 @@ public class Checker {
     }
 
 
+    private static Node getSubst(String var, Node node, Node substNode) {
+        return getSubst(node, var, node, substNode);
+    }
+
     /**
+     * @param formula   the whole formula should be stored to output correct errors
      * @param var
      * @param node
      * @param substNode
@@ -123,11 +176,25 @@ public class Checker {
                 }
                 if (substNode instanceof Var && substNode.getName().equals(var))
                     return substNode;
-                System.err.println("substNode " + substNode.getName());
+                System.err.println(("substNode " + substNode.getName() + " node " + node));
                 throw new ProofException(ERR_NO_PROOF);
             }
             return new Var(var);
         } else {
+            if (node instanceof Inc && substNode instanceof Inc) {
+                Inc incNode = (Inc) node;
+                Inc incSubstNode = (Inc) substNode;
+                int incNodeNumber = incNode.getNumber();
+                int incSubstNodeNumber = incSubstNode.getNumber();
+                if (incNodeNumber == incSubstNodeNumber)
+                    return getSubst(formula, var, incNode.getOperand(), incSubstNode.getOperand());
+                if (incNodeNumber < incSubstNodeNumber)
+                    return getSubst(formula, var, incNode.getOperand(),
+                            new Inc(incSubstNode.getOperand(), incSubstNodeNumber - incNodeNumber));
+                else
+                    return getSubst(formula, var, new Inc(incNode.getOperand(), incNodeNumber - incSubstNodeNumber),
+                            incSubstNode.getOperand());
+            }
             if (node.getChildren().size() == substNode.getChildren().size()) {
                 Node subst = variable;
                 for (int i = 0; i < node.getChildren().size(); i++) {
@@ -135,7 +202,7 @@ public class Checker {
                     if (subst.equals(variable)) {
                         subst = curSubst;
                     } else if (!curSubst.equals(variable) && !subst.equals(curSubst))
-                        throw new ProofException(ERR_NO_PROOF);
+                        throw new ProofException(ERR_NO_PROOF, "different substitutions " + curSubst + " " + subst);
 
                 }
                 return subst;
@@ -146,11 +213,36 @@ public class Checker {
     }
 
     private ProofType check(Node formula) {
+        // check for arithmetic axiom
+        for (int i = 0; i < Arithmetic.AXIOMS.length; i++) {
+            if (formula.match(Arithmetic.AXIOMS[i], true))
+                return new ProofType.Scheme(-i);
+        }
         if (formula instanceof Impl) {
             // check for axiom scheme
             for (int i = 0; i < PCalculus.SCHEMES.length; i++) {
-                if (formula.match(PCalculus.SCHEMES[i]))
+                if (formula.match(PCalculus.SCHEMES[i], false))
                     return new ProofType.Scheme(i);
+            }
+            // check for induction
+            Node psy = ((Impl) formula).getRight();
+            Node antecedent = ((Impl) formula).getLeft();
+            if (antecedent instanceof And) {
+                Node base = ((And) antecedent).getLeft();
+                if (((And) antecedent).getRight() instanceof Quantified) {
+                    Quantified step = (Quantified) ((And) antecedent).getRight().copy();
+                    step.getFreeVars();
+                    String x = step.getVariable();
+                    if (step.getOperand() instanceof Impl) {
+                        Impl impl = (Impl) step.getOperand();
+                        if (psy.getFreeVars().contains(x)) {
+                            Var var = new Var(x);
+                            if (impl.getLeft().equals(psy) && psy.subst(var, new Inc(var)).equals(impl.getRight())
+                                    && psy.subst(var, new Node(Arithmetic.ZERO, new ArrayList<>())).equals(base))
+                                return new ProofType.Scheme(-Arithmetic.AXIOMS.length);
+                        }
+                    }
+                }
             }
             if (checkForallScheme(formula))
                 return new ProofType.Scheme(10);
@@ -167,6 +259,7 @@ public class Checker {
                         String variable = quantified.getVariable();
                         if (left.getFreeVars().contains(variable))
                             throw new ProofException(String.format(ERR_FREE_VAR, variable, left.toString()));
+                        checkVarInAssumptions(variable);
                         return new ProofType.Forall();
                     }
                 }
@@ -177,6 +270,7 @@ public class Checker {
                         String variable = quantified.getVariable();
                         if (right.getFreeVars().contains(variable))
                             throw new ProofException(String.format(ERR_FREE_VAR, variable, right.toString()));
+                        checkVarInAssumptions(variable);
                         return new ProofType.Exists();
                     }
 
@@ -192,46 +286,26 @@ public class Checker {
         // check for MP
         for (int i = 0; i < curNodes.size(); i++) {
             // maximal index of an expression of the form: a -> node
-            for (int secondInd : rightPartToInds.get(formula)) {
-                Integer firstInd = leftPartToMinInd.get(curNodes.get(secondInd));
-                if (firstInd != null)
-                    return new ProofType.MP(firstInd, secondInd);
+            for (int secondInd : Util.nullCheck(rightPartToInds.get(formula))) {
+                Integer firstInd = null;
+                try {
+                    firstInd = leftPartToMinInd.get(((Impl) curNodes.get(secondInd)).getLeft());
+                } catch (ClassCastException e) {
+                    System.err.println(formula);
+                    System.err.println(parser.getLine());
+                }
+                if (firstInd != null) {
+                    return new ProofType.MP(curNodes.get(firstInd), firstInd, secondInd);
+                }
             }
         }
         return null;
     }
 
-    public abstract static class ProofType {
-        static final class MP extends ProofType {
-            public MP(int first, int second) {
-                this.first = first;
-                this.second = second;
-            }
-
-            int first, second;
-        }
-
-        static final class Assumption extends ProofType {
-            public Assumption(int n) {
-                this.i = i;
-            }
-
-            int i;
-        }
-
-        static final class Scheme extends ProofType {
-            public Scheme(int n) {
-                this.i = i;
-            }
-
-            int i;
-        }
-
-        static final class Forall extends ProofType {
-        }
-
-        static final class Exists extends ProofType {
-        }
+    private void checkVarInAssumptions(String variable) {
+        for (Node a : parser.getAssumptions())
+            if (a.getFreeVars().contains(variable))
+                throw new ProofException(String.format(ERR_FV_ASSUMPTION, variable, a.toString()));
     }
 
     static class ProofException extends RuntimeException {
@@ -253,36 +327,55 @@ public class Checker {
     }
 
     public static void main(String[] args) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("test-checker"))) {
-            Parser parser = new Parser(reader, false);
+        Parser parser = new Parser();
+//        Node bad = parser.nextExpr("!b'=0");
+//        Node worse = parser.nextExpr("0+0=0");
+        Node worst = parser.nextExpr("A&B");
+//        System.out.println(worst == null);
+        System.out.println(worst.getFreeVars());
+//        System.out.println(bad.match(Arithmetic.AXIOMS[3], true));
+//        System.out.println(worse.match(Arithmetic.AXIOMS[5], true));
+        Impl impl = (Impl) parser.nextExpr("@b(@a(a=b'''->a'=b))->@a(a=(0)'''''->a'=(0)'')");
+//        Impl impl = (Impl) parser.nextExpr("@x(x=(a+b)'->(a+b)'=x)->a+b'=(a+b)'->(a+b)'=a+b'");
+        Node node = impl.getLeft().getChildren().get(0);
+        System.out.println("node " + node);
+        System.out.println("substNode " + impl.getRight());
+        try {
+            System.out.println(Checker.getSubst(((Quantified) impl.getLeft()).getVariable(), node, impl.getRight()));
+        } catch (ProofException e) {
+            e.printStackTrace();
+            e.printExtraMessage();
+        }
+//        try (BufferedReader reader = new BufferedReader(new FileReader("test-checker"))) {
+//            Parser parser = new Parser(reader, false);
 //            Checker checker = new Checker(parser);
 //            System.out.println(new Quantified(PCalculus.FORALL, "x", new Eq(new Var("x"),
 //                    new Node("0", new ArrayList<>()))).getFreeVars());
-            for (; ; ) {
-                String var = "x";
-                try {
-                    Node node = parser.nextExpr();
-                    Node substNode = parser.nextExpr();
-                    if (node != null && substNode != null) {
-                        System.out.println("free in substNode " + substNode.getFreeVars());
-                        System.err.println("free in node " + node.getFreeVars());
-//                        System.err.println("vars of node " + node.getVars());
-                        System.out.println("Subst = " + Checker.getSubst(node, var, node, substNode));
+//            for (; ; ) {
+//                String var = "x";
+//                try {
+//                    Node node = parser.nextExpr();
+//                    Node substNode = parser.nextExpr();
+//                    if (node != null && substNode != null) {
+//                        System.out.println("free in substNode " + substNode.getFreeVars());
+//                        writeln("free in node " + node.getFreeVars());
+//                        writeln("vars of node " + node.getVars());
+//                        System.out.println("Subst = " + Checker.getSubst(node, var, node, substNode));
 //                    Impl exists = new Impl(substNode, new Quantified(PCalculus.EXISTS, var, node));
 //                    Impl forall = new Impl(new Quantified(PCalculus.FORALL, var, node), substNode);
 //                    System.out.println(Checker.checkExistsScheme(exists));
 //                    System.out.println(Checker.checkExistsScheme(forall));
 //                    System.out.println(Checker.checkForallScheme(forall));
 //                    System.out.println(Checker.checkForallScheme(exists));
-                    }
-                } catch (IndexOutOfBoundsException e) {
-                    break;
-                } catch (ProofException pe) {
-                    pe.printStackTrace();
-                }
-            }
+//                    }
+//                } catch (IndexOutOfBoundsException e) {
+//                    break;
+//                } catch (ProofException pe) {
+//                    pe.printStackTrace();
+//                }
+//            }
 
-        } catch (IOException ignored) {
-        }
+//        } catch (IOException ignored) {
+//        }
     }
 }

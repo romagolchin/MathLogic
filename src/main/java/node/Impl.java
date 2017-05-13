@@ -16,7 +16,7 @@ public class Impl extends BinaryNode {
     }
 
     @Override
-    protected Node copy() {
+    public Node copy() {
         return new Impl(this);
     }
 

@@ -3,6 +3,8 @@ package node;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.sun.istack.internal.Nullable;
+import org.jetbrains.annotations.NotNull;
+import proofs.Arithmetic;
 import proofs.PCalculus;
 
 import java.util.*;
@@ -60,7 +62,7 @@ public class Node {
         return node.freeVars = res;
     }
 
-    public Node(String name, List<Node> children) {
+    public Node(String name, @NotNull List<Node> children) {
         freeVars = null;
         this.name = name;
         this.children = children;
@@ -74,7 +76,7 @@ public class Node {
         this.children = new ArrayList<>();
         toCopy.getChildren().forEach(node -> this.children.add(node.copy()));
         this.vars = new HashSet<>(toCopy.vars);
-        this.freeVars = new HashSet<>(toCopy.freeVars);
+        this.freeVars = null;
         this.isBinOperator = toCopy.isBinOperator;
         this.priority = toCopy.priority;
     }
@@ -128,7 +130,6 @@ public class Node {
 
     protected void updateVars() {
         vars = new HashSet<>();
-//        freeVars = new HashSet<>();
         if (children != null) {
             for (Node child : children) {
                 if (child == null) {
@@ -181,7 +182,7 @@ public class Node {
 
     }
 
-    protected Node copy() {
+    public Node copy() {
         return new Node(this);
     }
 
@@ -191,11 +192,16 @@ public class Node {
         if (o == null || !(o instanceof Node)) return false;
 
         Node node = (Node) o;
+        if (node instanceof Inc && ((Inc) node).number == 0)
+            node = ((Inc) o).getOperand();
+        Node that = this;
+//        if (this instanceof Inc && ((Inc) this).number == 0)
+//            that = ((Inc) this).getOperand();
 
-        if (isBinOperator != node.isBinOperator) return false;
-        if (name != null ? !name.equals(node.getName()) : node.getName() != null) return false;
-        if (children != null ? !children.equals(node.getChildren()) : node.getChildren() != null) return false;
-        return vars != null ? vars.equals(node.vars) : node.vars == null;
+        if (that.isBinOperator != node.isBinOperator) return false;
+        if (that.name != null ? !that.name.equals(node.getName()) : node.getName() != null) return false;
+        if (that.children != null ? !that.children.equals(node.getChildren()) : node.getChildren() != null) return false;
+        return that.vars != null ? that.vars.equals(node.vars) : node.vars == null;
 
     }
 
@@ -264,10 +270,10 @@ public class Node {
         return res;
     }
 
-    public boolean match(Node scheme) {
+    public boolean match(Node scheme, boolean isPlainAxiom) {
         Multimap<String, Node> res;
         try {
-            res = matchHelper(this, scheme);
+            res = matchHelper(this, scheme, isPlainAxiom);
             for (String s : res.keySet()) {
                 if (res.get(s).size() != 1)
                     return false;
@@ -275,22 +281,29 @@ public class Node {
             return true;
         } catch (IllegalArgumentException e) {
 //            fixme remove after debug
-            e.printStackTrace();
+//            e.printStackTrace();
             return false;
         }
     }
 
-    private static Multimap<String, Node> matchHelper(Node node, Node scheme) {
+    private static Multimap<String, Node> matchHelper(Node node, Node scheme, boolean isPlainAxiom) {
         Multimap<String, Node> res = HashMultimap.create();
-        if (scheme instanceof Var) {
-            Var var = (Var) scheme;
-            res.put(var.getName(), node);
+        if (scheme.getChildren().isEmpty()) {
+            if (scheme instanceof Var && !scheme.equals(Arithmetic.Z)) {
+                if (isPlainAxiom && !(node instanceof Var))
+                    throw new IllegalArgumentException(
+                            node + " corresponds to var " + scheme + " but is not a var itself");
+                Var var = (Var) scheme;
+                res.put(var.getName(), node);
+            } else if (!scheme.equals(node))
+                throw new IllegalArgumentException();
             return res;
         }
         if (node.getChildren().size() == scheme.getChildren().size()) {
             for (int i = 0; i < node.getChildren().size(); i++) {
-                res.putAll(matchHelper(node.getChildren().get(i), scheme.getChildren().get(i)));
+                res.putAll(matchHelper(node.getChildren().get(i), scheme.getChildren().get(i), isPlainAxiom));
             }
+            return res;
         }
         throw new IllegalArgumentException(node + " and " + scheme + " have different structure");
     }
