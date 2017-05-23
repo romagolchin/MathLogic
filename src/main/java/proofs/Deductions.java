@@ -166,8 +166,8 @@ public class Deductions {
             return res;
         Node node = annotatedNode.node;
         ProofType proofType = annotatedNode.type;
+        Impl impl = (Impl) node;
         if (proofType instanceof ProofType.Forall) {
-            Impl impl = (Impl) node;
             final Quantified right = (Quantified) impl.getRight();
             res.addAll(applyPropositionalProof(HELPERS.get(0),
                     ImmutableMap.of("A", alpha, "F", impl.getLeft(), "P", right.getOperand())
@@ -179,7 +179,16 @@ public class Deductions {
             );
             res.add(((Impl) res.get(res.size() - 1)).getRight());
         } else if (proofType instanceof ProofType.Exists) {
-
+            Quantified left = (Quantified) impl.getLeft();
+            res.addAll(applyPropositionalProof(HELPERS.get(2),
+                    ImmutableMap.of("A", alpha, "F", impl.getRight(), "P", left.getOperand()
+            )));
+            Impl afp = (Impl) res.get(res.size() - 1);
+            res.addAll(PCalculus.exists((Impl) afp.getRight(), left.getVariable()));
+            res.addAll(applyPropositionalProof(HELPERS.get(2),
+                    ImmutableMap.of("A", left, "P", alpha, "F", impl.getRight()))
+            );
+            res.add(((Impl) res.get(res.size() - 1)).getRight());
         } else throw new IllegalArgumentException();
         return res;
     }

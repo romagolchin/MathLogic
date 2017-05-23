@@ -63,9 +63,10 @@ public class Parser {
         lexer.next();
     }
 
-    @Nullable private List<Node> getArgs() {
+    @Nullable
+    private List<Node> getArgs() {
         List<Node> args = null;
-        if (accept(Token.OPEN)) {
+        if (lexer.token == Token.OPEN) {
             args = new ArrayList<>();
             do {
                 lexer.next();
@@ -226,7 +227,13 @@ public class Parser {
         Node implication;
         if ((cur = reader.readLine()) == null)
             throw new IOException("failed to get next expression");
-        implication = nextExpr(cur);
+        try {
+            implication = nextExpr(cur);
+        } catch (Exception e) {
+            System.out.println(line);
+//            e.printStackTrace();
+            throw e;
+        }
         if (implication != null)
             implication.getFreeVars();
         return implication;
@@ -245,16 +252,20 @@ public class Parser {
 
 
     public static void main(String[] args) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("proof"))) {
-            Parser parser = new Parser(reader);
-            for (; ; ) {
-                try {
-                    parser.nextExpr();
-                } catch (IndexOutOfBoundsException e) {
-                    break;
-                }
-            }
-        } catch (IOException ignored) {
-        }
+        Parser p = new Parser();
+        System.out.println(p.nextExpr("@x?yP(f(f(a),x,y(x)))"));
+        System.out.println(p.nextExpr("P(f(a),g(b))"));
+        System.out.println(p.nextExpr("  @      a @b@c(a=   b->a=c->b=c)->@b@c(((a+a')+(a*a))=b->((a+a')+(a*a))=c->b=c) "));
+//        try (BufferedReader reader = new BufferedReader(new FileReader("proof"))) {
+//            Parser parser = new Parser(reader);
+//            for (; ; ) {
+//                try {
+//                    parser.nextExpr();
+//                } catch (IndexOutOfBoundsException e) {
+//                    break;
+//                }
+//            }
+//        } catch (IOException ignored) {
+//        }
     }
 }

@@ -18,7 +18,6 @@ public class Node {
     @Nullable
     protected List<Node> children;
     protected Set<String> vars;
-    //todo initialize and update properly
     protected Set<String> freeVars;
     protected int priority;
 
@@ -280,13 +279,12 @@ public class Node {
             }
             return true;
         } catch (IllegalArgumentException e) {
-//            fixme remove after debug
-//            e.printStackTrace();
             return false;
         }
     }
 
     private static Multimap<String, Node> matchHelper(Node node, Node scheme, boolean isPlainAxiom) {
+
         Multimap<String, Node> res = HashMultimap.create();
         if (scheme.getChildren().isEmpty()) {
             if (scheme instanceof Var && !scheme.equals(Arithmetic.Z)) {
@@ -300,6 +298,8 @@ public class Node {
             return res;
         }
         if (node.getChildren().size() == scheme.getChildren().size()) {
+            if (!node.name.equals(scheme.name))
+                throw new IllegalArgumentException(node + " and " + scheme + "have different names");
             for (int i = 0; i < node.getChildren().size(); i++) {
                 res.putAll(matchHelper(node.getChildren().get(i), scheme.getChildren().get(i), isPlainAxiom));
             }

@@ -38,6 +38,8 @@ public class Lexer {
 
 
     public void next() {
+        while (pos < s.length() && Character.isWhitespace(s.charAt(pos)))
+            pos++;
 //        System.err.println("pos = " + pos);
         if (pos >= s.length()) {
             token = Token.END;

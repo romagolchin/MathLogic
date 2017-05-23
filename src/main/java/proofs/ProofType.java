@@ -2,9 +2,9 @@ package proofs;
 
 import node.Node;
 
-import static proofs.Checker.ANN_HYPO;
-import static proofs.Checker.ANN_MP;
 import static proofs.Checker.ANN_SCHEME;
+import static proofs.Checker.ANN_MP;
+import static proofs.Checker.ANN_HYPO;
 
 /**
  * @author Roman Golchin (romagolchin@gmail.com)

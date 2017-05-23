@@ -23,8 +23,8 @@ public class Checker {
 
     static final String ERR_NO_PROOF = "Не доказано";
 
-    static final String ANN_HYPO = "Сх. акс. ";
-    static final String ANN_SCHEME = "Предп. ";
+    static final String ANN_SCHEME = "Сх. акс. ";
+    static final String ANN_HYPO = "Предп. ";
     static final String ANN_MP = "M.P. ";
 
     Parser parser;
@@ -78,6 +78,8 @@ public class Checker {
                     }
                     leftPartToMinInd.putIfAbsent(formula, curNodes.size());
                     proven.add(formula);
+//                    if (formula.equals(parser.nextExpr("P(f(a),g(b))->?b1(P(f(a),g(b1)))")))
+//                        System.out.println(formula);
 //                    if (type instanceof ProofType.Forall || type instanceof ProofType.Exists)
 //                        System.out.println(formula);
                     if (deduction)
@@ -98,11 +100,16 @@ public class Checker {
             }
         }
         if (deduction) {
+            System.out.println("deducing");
             List<Node> assumptions = parser.getAssumptions();
+            Node node = curNodes.isEmpty() ? parser.getProposition() : curNodes.get(curNodes.size() - 1);
+            if (assumptions.isEmpty()) {
+                writeln("|-" + node);
+            }
             writeln(assumptions.subList(0, assumptions.size() - 1).stream().map(Node::toString).collect(
-                    Collectors.joining(", ", "",
-                            "|-" + new Impl(assumptions.get(assumptions.size() - 1), parser.getProposition()))
-            ));
+                    Collectors.joining(", ", "", "|-"))
+                    + new Impl(assumptions.get(assumptions.size() - 1),
+                    node));
             for (AnnotatedNode a : annotatedNodes) {
                 String str = assumptions.isEmpty() ? a.node.toString() :
                         Deductions.lineBreakJoin(Deductions.deduction(assumptions.get(assumptions.size() - 1), a));
@@ -140,7 +147,7 @@ public class Checker {
                 try {
                     Node operand = quantified.getOperand().copy();
                     operand.getFreeVars();
-                    getSubst(quantified.getVariable(), quantified.getOperand(), impl.getLeft());
+                    getSubst(quantified.getVariable(), operand, impl.getLeft());
                     return true;
                 } catch (ProofException e) {
 //                    e.printStackTrace();
@@ -248,8 +255,8 @@ public class Checker {
                 return new ProofType.Scheme(10);
             else if (checkExistsScheme(formula))
                 return new ProofType.Scheme(11);
-                // check for predicate calculus rules
             else {
+                // check for predicate calculus rules
                 Node left = ((Impl) formula).getLeft();
                 Node right = ((Impl) formula).getRight();
                 if (right instanceof Quantified) {
@@ -278,6 +285,7 @@ public class Checker {
             }
         }
         // check for assumption
+//        System.out.println(parser.getAssumptions().size());
         for (int i = 0; i < parser.getAssumptions().size(); i++) {
             Node a = parser.getAssumptions().get(i);
             if (a.equals(formula))
@@ -330,7 +338,10 @@ public class Checker {
         Parser parser = new Parser();
 //        Node bad = parser.nextExpr("!b'=0");
 //        Node worse = parser.nextExpr("0+0=0");
-        Node worst = parser.nextExpr("A&B");
+        System.out.println(parser.nextExpr("!@b?bP(f(a),g(b))->@b?bP(f(a),g(b))|!@b?bP(f(a),g(b))")
+                .match(PCalculus.SCHEMES[6], false));
+        Node worst = parser.nextExpr("P(f(a),g(b))->?b1(P(f(a),g(b1)))");
+        System.out.println(checkExistsScheme(worst));
 //        System.out.println(worst == null);
         System.out.println(worst.getFreeVars());
 //        System.out.println(bad.match(Arithmetic.AXIOMS[3], true));
