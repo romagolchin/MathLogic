@@ -158,9 +158,8 @@ public class Deductions {
                 .collect(Collectors.toList());
         if (!res.isEmpty())
             return res;
-        Node node = annotatedNode.node;
         ProofType proofType = annotatedNode.type;
-        Impl impl = (Impl) node;
+        Impl impl = (Impl) annotatedNode.node;
         if (proofType instanceof ProofType.Forall) {
             final Quantified right = (Quantified) impl.getRight();
             res.addAll(applyPropositionalProof(HELPERS.get(0),

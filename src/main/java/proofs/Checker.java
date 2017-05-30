@@ -158,7 +158,7 @@ public class Checker {
                     getSubst(quantified.getVariable(), operand, impl.getLeft());
                     return true;
                 } catch (ProofException e) {
-//                    e.printStackTrace();
+                    e.printStackTrace();
                     return false;
                 }
             }
@@ -224,7 +224,7 @@ public class Checker {
             }
         }
 
-        throw new ProofException("different structure");
+        throw new ProofException("different structure " + node + " " + var + " " + substNode);
     }
 
     private ProofType check(Node formula) {
@@ -274,18 +274,22 @@ public class Checker {
                         String variable = quantified.getVariable();
                         if (left.getFreeVars().contains(variable))
                             throw new ProofException(String.format(ERR_FREE_VAR, variable, left.toString()));
-                        checkVarInAssumptions(variable);
+                        if (deduction)
+                            checkVarInAssumptions(variable);
                         return new ProofType.Forall();
                     }
                 }
                 if (left instanceof Quantified) {
+                    if (curNodes.size() == 2041)
+                        System.out.println();
                     Quantified quantified = (Quantified) left;
                     if (quantified.getName().equals(PCalculus.EXISTS) &&
                             proven.contains(new Impl(quantified.getOperand(), right))) {
                         String variable = quantified.getVariable();
                         if (right.getFreeVars().contains(variable))
                             throw new ProofException(String.format(ERR_FREE_VAR, variable, right.toString()));
-                        checkVarInAssumptions(variable);
+                        if (deduction)
+                            checkVarInAssumptions(variable);
                         return new ProofType.Exists();
                     }
 
@@ -319,9 +323,10 @@ public class Checker {
     }
 
     private void checkVarInAssumptions(String variable) {
-        for (Node a : parser.getAssumptions())
-            if (a.getFreeVars().contains(variable))
-                throw new ProofException(String.format(ERR_FV_ASSUMPTION, variable, a.toString()));
+        List<Node> assumptions = parser.getAssumptions();
+        Node a = assumptions.get(assumptions.size() - 1);
+        if (a.getFreeVars().contains(variable))
+            throw new ProofException(String.format(ERR_FV_ASSUMPTION, variable, a.toString()));
     }
 
     static class ProofException extends RuntimeException {

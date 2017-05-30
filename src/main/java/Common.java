@@ -28,9 +28,10 @@ public class Common {
                 Checker checker = new Checker(parser, writer, strict, deduction, annotation);
                 checker.checkAll();
             } catch (IOException ignored) {
-
+                ignored.printStackTrace();
             }
         } catch (IOException ignored) {
+            ignored.printStackTrace();
         }
     }
 }
