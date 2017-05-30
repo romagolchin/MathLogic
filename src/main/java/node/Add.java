@@ -6,6 +6,8 @@ import proofs.PCalculus;
 import java.util.HashMap;
 import java.util.Map;
 
+import static node.BinaryNode.Associativity.L;
+
 /**
  * Created by Roman on 24/02/2017.
  */
@@ -13,6 +15,7 @@ public class Add extends BinaryNode implements Term, Calculable {
     public Add(Node left, Node right) {
         super(Arithmetic.ADD, left, right);
         priority = 5;
+        associativity = L;
     }
 
     public Add(Node toCopy) {
@@ -26,7 +29,6 @@ public class Add extends BinaryNode implements Term, Calculable {
 
     @Override
     public Node calculate() {
-//        System.out.println("Add");
         Node cur;
         try {
             Node left = getLeft();
@@ -88,16 +90,4 @@ public class Add extends BinaryNode implements Term, Calculable {
         return null;
     }
 
-    @Override
-    public String toString() {
-        String rs = getRight().toString();
-        String ls = getLeft().toString();
-        if (getRight().priority <= priority) {
-            rs = "(" + rs + ")";
-        }
-        if (getLeft().priority < priority) {
-            ls = "(" + ls + ")";
-        }
-        return ls + name + rs;
-    }
 }

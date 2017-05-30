@@ -12,6 +12,12 @@ import java.util.Arrays;
  */
 public class BinaryNode extends Node {
 
+    enum Associativity {
+        L, R, N
+    }
+
+    protected Associativity associativity;
+
     public BinaryNode(String operator, Node left, Node right) {
         super(operator, new ArrayList<>(Arrays.asList(left, right)));
         isBinOperator = true;
@@ -19,6 +25,10 @@ public class BinaryNode extends Node {
 
     public BinaryNode(Node toCopy) {
         super(toCopy);
+        if (toCopy instanceof BinaryNode) {
+            BinaryNode binaryNode = (BinaryNode) toCopy;
+            associativity = binaryNode.associativity;
+        }
     }
 
     @Override
@@ -34,13 +44,23 @@ public class BinaryNode extends Node {
         return children.get(1);
     }
 
+
+    String bracify(String s) {
+        return "(" + s + ")";
+    }
+
     @Override
     public String toString() {
-        if (this instanceof Eq && getLeft().equals(getRight())) {
-//            System.err.println(getLeft() + " " + getRight());
-        }
-        String ls = getLeft().priority < priority ? "(" + getLeft().toString() + ")" : getLeft().toString();
-        String rs = getRight().priority < priority ? "(" + getRight().toString() + ")" : getRight().toString();
+        String rs = getRight().toString();
+        String ls = getLeft().toString();
+        if (getLeft().priority < priority)
+            ls = bracify(ls);
+        if (getRight().priority < priority)
+            rs = bracify(rs);
+        if (getLeft().priority == priority && (associativity == Associativity.R || associativity == Associativity.N))
+            ls = bracify(ls);
+        if (getRight().priority == priority && (associativity == Associativity.L || associativity == Associativity.N))
+            rs = bracify(rs);
         return ls + name + rs;
     }
 

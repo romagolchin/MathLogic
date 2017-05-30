@@ -103,16 +103,24 @@ public class Checker {
             System.out.println("deducing");
             List<Node> assumptions = parser.getAssumptions();
             Node node = curNodes.isEmpty() ? parser.getProposition() : curNodes.get(curNodes.size() - 1);
+            System.err.println(node);
             if (assumptions.isEmpty()) {
                 writeln("|-" + node);
-            }
-            writeln(assumptions.subList(0, assumptions.size() - 1).stream().map(Node::toString).collect(
+            } else writeln(assumptions.subList(0, assumptions.size() - 1).stream().map(Node::toString).collect(
                     Collectors.joining(", ", "", "|-"))
                     + new Impl(assumptions.get(assumptions.size() - 1),
                     node));
-            for (AnnotatedNode a : annotatedNodes) {
-                String str = assumptions.isEmpty() ? a.node.toString() :
-                        Deductions.lineBreakJoin(Deductions.deduction(assumptions.get(assumptions.size() - 1), a));
+            int cnt = 1;
+            for (int k = 0; k < annotatedNodes.size(); ++k) {
+                AnnotatedNode a = annotatedNodes.get(k);
+                System.err.println("type " + a.type);
+                String str = a.node.toString() + "\n";
+                if (!assumptions.isEmpty()) {
+                    List<Node> deduction = Deductions.deduction(assumptions.get(assumptions.size() - 1), a);
+                    System.err.println((k + 1) + " " + cnt + " " + (cnt + deduction.size() - 1));
+                    cnt += deduction.size();
+                    str = Deductions.lineBreakJoin(deduction);
+                }
                 writer.write(str);
             }
         }
@@ -357,6 +365,7 @@ public class Checker {
             e.printStackTrace();
             e.printExtraMessage();
         }
+        System.out.println(new Or(new Var("A"), new Or(new Var("B"), new Var("C"))));
 //        try (BufferedReader reader = new BufferedReader(new FileReader("test-checker"))) {
 //            Parser parser = new Parser(reader, false);
 //            Checker checker = new Checker(parser);

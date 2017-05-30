@@ -14,6 +14,7 @@ public class Mul extends BinaryNode implements Term, Calculable {
     public Mul(Node left, Node right) {
         super(Arithmetic.MUL, left, right);
         priority = 6;
+        associativity = Associativity.L;
     }
 
     public Mul(Node toCopy) {
@@ -74,16 +75,4 @@ public class Mul extends BinaryNode implements Term, Calculable {
         return null;
     }
 
-    @Override
-    public String toString() {
-        String rs = getRight().toString();
-        String ls = getLeft().toString();
-        if (getRight().priority <= priority) {
-            rs = "(" + rs + ")";
-        }
-        if (getLeft().priority < priority) {
-            ls = "(" + ls + ")";
-        }
-        return ls + name + rs;
-    }
 }

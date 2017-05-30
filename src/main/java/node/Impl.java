@@ -9,6 +9,7 @@ public class Impl extends BinaryNode {
     public Impl(Node left, Node right) {
         super(PCalculus.IMPL, left, right);
         priority = 0;
+        associativity = Associativity.R;
     }
 
     protected Impl(Node toCopy) {
@@ -20,12 +21,4 @@ public class Impl extends BinaryNode {
         return new Impl(this);
     }
 
-    @Override
-    public String toString() {
-        String ls = getLeft().toString();
-        if (getLeft().priority <= priority) {
-            ls = "(" + ls + ")";
-        }
-        return ls + name + getRight().toString();
-    }
 }

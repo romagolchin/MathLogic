@@ -66,7 +66,7 @@ public class Node {
         this.name = name;
         this.children = children;
         updateVars();
-        priority = 2;
+        priority = 10;
         isBinOperator = false;
     }
 

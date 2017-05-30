@@ -31,12 +31,6 @@ public class Deductions {
                     fullDeduction(gammas.get(1), proofWithAssumptions2()),
                     fullDeduction(gammas.get(2), proofWithAssumptions3())
             );
-//            Stream.of(
-//            fullDeduction(gammas.get(0), proofWithAssumptions1()),
-//            fullDeduction(gammas.get(1), proofWithAssumptions2()),
-//            fullDeduction(gammas.get(2), proofWithAssumptions3())
-//    ).map(l -> l.stream().map(AnnotatedNode::getNode).collect(Collectors.toList()))
-//            .collect(Collectors.toList());
 
     static List<Node> applyPropositionalProof(List<AnnotatedNode> proof, Map<String, Node> map) {
         return proof.stream().map(x -> x.node.apply(map)).collect(Collectors.toList());
@@ -58,7 +52,7 @@ public class Deductions {
         res.add(AnnotatedNode.assumption(A));
         res.add(AnnotatedNode.assumption(F));
         res.addAll(PCalculus.annotatedMP(PCalculus.applyScheme(2, ImmutableMap.of(
-                "A", F, "B", P
+                "A", A, "B", F
         )), 2));
         res.addAll(PCalculus.annotatedMP(AnnotatedNode.assumption(new Impl(new And(A, F), P))));
         return res;
@@ -217,8 +211,23 @@ public class Deductions {
     }
 
     public static void main(String[] args) throws IOException {
+        Var x1 = new Var("x");
+        Var y1 = new Var("y");
+        System.out.println(new And(new Quantified(PCalculus.FORALL, "x", new Node("P", ImmutableList.of(x1, new Var("y")))), new Eq(x1, y1)));
+        System.out.println(new And(A, F));
+        System.out.println(new And(new Or(A, A), A));
+        System.out.println(new And(new Impl(P, new Impl(A, F)), new And(A, F)));
+        System.out.println(PCalculus.applyScheme(5, ImmutableMap.of()).node.apply(ImmutableMap.of(
+                "A", new Var("A"), "B", new Or(new Var("B"), new Var("C"))
+        )));
+        System.out.println(PCalculus.applyScheme(5, ImmutableMap.of()).node.apply(ImmutableMap.of(
+                "B", new Var("A"), "A", new Or(new Var("B"), new Var("C"))
+        )));
+        System.out.println(new And(new Var("A"), new And(new Var("B"), new Var("C"))));
         System.out.println(PCalculus.annotatedMP(AnnotatedNode.assumption(new Impl(A, F))));
         System.setOut(new PrintStream(new FileOutputStream("helpers")));
-        System.out.println(lineBreakJoin(HELPERS.stream().map(x -> lineBreakJoin(x)).collect(Collectors.toList())));
+        System.out.println("A|-A");
+        System.out.println(lineBreakJoin(HELPERS.stream().
+                map(x -> lineBreakJoin(x.stream().map(y -> y.node).collect(Collectors.toList()))).collect(Collectors.toList())));
     }
 }

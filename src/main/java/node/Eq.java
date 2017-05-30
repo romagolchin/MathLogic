@@ -9,6 +9,7 @@ public class Eq extends BinaryNode {
     public Eq(Node left, Node right) {
         super(Arithmetic.EQ, left, right);
         priority = 4;
+        associativity = Associativity.N;
     }
 
     public Eq reverse() {
