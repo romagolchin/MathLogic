@@ -78,14 +78,11 @@ public class Checker {
                     }
                     leftPartToMinInd.putIfAbsent(formula, curNodes.size());
                     proven.add(formula);
-//                    if (formula.equals(parser.nextExpr("P(f(a),g(b))->?b1(P(f(a),g(b1)))")))
-//                        System.out.println(formula);
-//                    if (type instanceof ProofType.Forall || type instanceof ProofType.Exists)
-//                        System.out.println(formula);
                     if (deduction)
                         annotatedNodes.add(new AnnotatedNode(formula, type));
                 } else {
                     if (strict) {
+                        System.err.println("wrong");
                         String message = String.format(ERR_WRONG_FROM, parser.getLine() - 1);
                         writeln(error.isEmpty() ? message : message + ": " + error);
                         return;
@@ -158,7 +155,7 @@ public class Checker {
                     getSubst(quantified.getVariable(), operand, impl.getLeft());
                     return true;
                 } catch (ProofException e) {
-                    e.printStackTrace();
+//                    e.printStackTrace();
                     return false;
                 }
             }
@@ -324,9 +321,11 @@ public class Checker {
 
     private void checkVarInAssumptions(String variable) {
         List<Node> assumptions = parser.getAssumptions();
-        Node a = assumptions.get(assumptions.size() - 1);
-        if (a.getFreeVars().contains(variable))
-            throw new ProofException(String.format(ERR_FV_ASSUMPTION, variable, a.toString()));
+        if (!assumptions.isEmpty()) {
+            Node a = assumptions.get(assumptions.size() - 1);
+            if (a.getFreeVars().contains(variable))
+                throw new ProofException(String.format(ERR_FV_ASSUMPTION, variable, a.toString()));
+        }
     }
 
     static class ProofException extends RuntimeException {
@@ -349,7 +348,8 @@ public class Checker {
 
     public static void main(String[] args) {
         Parser parser = new Parser();
-//        Node bad = parser.nextExpr("!b'=0");
+        Node bad = parser.nextExpr("@x(@xP(x)&Q(x))");
+        System.out.println(bad.getFreeVars());
 //        Node worse = parser.nextExpr("0+0=0");
         System.out.println(parser.nextExpr("!@b?bP(f(a),g(b))->@b?bP(f(a),g(b))|!@b?bP(f(a),g(b))")
                 .match(PCalculus.SCHEMES[6], false));
@@ -371,36 +371,5 @@ public class Checker {
             e.printExtraMessage();
         }
         System.out.println(new Or(new Var("A"), new Or(new Var("B"), new Var("C"))));
-//        try (BufferedReader reader = new BufferedReader(new FileReader("test-checker"))) {
-//            Parser parser = new Parser(reader, false);
-//            Checker checker = new Checker(parser);
-//            System.out.println(new Quantified(PCalculus.FORALL, "x", new Eq(new Var("x"),
-//                    new Node("0", new ArrayList<>()))).getFreeVars());
-//            for (; ; ) {
-//                String var = "x";
-//                try {
-//                    Node node = parser.nextExpr();
-//                    Node substNode = parser.nextExpr();
-//                    if (node != null && substNode != null) {
-//                        System.out.println("free in substNode " + substNode.getFreeVars());
-//                        writeln("free in node " + node.getFreeVars());
-//                        writeln("vars of node " + node.getVars());
-//                        System.out.println("Subst = " + Checker.getSubst(node, var, node, substNode));
-//                    Impl exists = new Impl(substNode, new Quantified(PCalculus.EXISTS, var, node));
-//                    Impl forall = new Impl(new Quantified(PCalculus.FORALL, var, node), substNode);
-//                    System.out.println(Checker.checkExistsScheme(exists));
-//                    System.out.println(Checker.checkExistsScheme(forall));
-//                    System.out.println(Checker.checkForallScheme(forall));
-//                    System.out.println(Checker.checkForallScheme(exists));
-//                    }
-//                } catch (IndexOutOfBoundsException e) {
-//                    break;
-//                } catch (ProofException pe) {
-//                    pe.printStackTrace();
-//                }
-//            }
-
-//        } catch (IOException ignored) {
-//        }
     }
 }

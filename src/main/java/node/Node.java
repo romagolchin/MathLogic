@@ -41,6 +41,7 @@ public class Node {
     private static Set<String> freeVarsHelper(Set<String> curBoundVars, Node node) {
         HashSet<String> res = new HashSet<>();
         String bound = null;
+        boolean addedNewVar = false;
         if (node.freeVars != null) {
             return node.freeVars;
         }
@@ -51,13 +52,16 @@ public class Node {
         } else {
             if (node instanceof Quantified) {
                 bound = ((Quantified) node).getVariable();
+                if (!curBoundVars.contains(bound))
+                    addedNewVar = true;
                 curBoundVars.add(bound);
             }
             for (Node child : node.children) {
                 res.addAll(freeVarsHelper(curBoundVars, child));
             }
         }
-        curBoundVars.remove(bound);
+        if (addedNewVar)
+            curBoundVars.remove(bound);
         return node.freeVars = res;
     }
 
@@ -199,7 +203,8 @@ public class Node {
 
         if (that.isBinOperator != node.isBinOperator) return false;
         if (that.name != null ? !that.name.equals(node.getName()) : node.getName() != null) return false;
-        if (that.children != null ? !that.children.equals(node.getChildren()) : node.getChildren() != null) return false;
+        if (that.children != null ? !that.children.equals(node.getChildren()) : node.getChildren() != null)
+            return false;
         return that.vars != null ? that.vars.equals(node.vars) : node.vars == null;
 
     }
